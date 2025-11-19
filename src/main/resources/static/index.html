@@ -1,10 +1,646 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酒店接待管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #343a40;
+        }
+        .sidebar .nav-link {
+            color: #fff;
+        }
+        .sidebar .nav-link.active {
+            background-color: #007bff;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .table-actions {
+            white-space: nowrap;
+        }
+        .status-available { background-color: #d4edda; }
+        .status-occupied { background-color: #f8d7da; }
+        .status-maintenance { background-color: #fff3cd; }
+    </style>
 </head>
 <body>
-$END$
+<div class="container-fluid">
+    <div class="row">
+        <!-- 侧边栏 -->
+        <div class="col-md-2 sidebar p-0">
+            <div class="p-3">
+                <h4 class="text-white text-center">酒店管理系统</h4>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" data-section="guest-management">
+                        <i class="bi bi-people-fill"></i> 客人管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="room-management">
+                        <i class="bi bi-door-closed"></i> 房间管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="check-in">
+                        <i class="bi bi-box-arrow-in-right"></i> 办理入住
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="account-management">
+                        <i class="bi bi-cash-coin"></i> 账务管理
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="checkout-management">
+                        <i class="bi bi-receipt"></i> 结账管理
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="col-md-10 main-content">
+            <!-- 客人管理 -->
+            <div id="guest-management" class="content-section">
+                <h2>客人管理</h2>
+                <div class="mb-3">
+                    <button class="btn btn-primary" id="add-guest-btn">新增客人</button>
+                    <button class="btn btn-info" id="refresh-guests-btn">刷新列表</button>
+                    <div class="input-group mt-2" style="width: 300px;">
+                        <input type="text" class="form-control" id="search-guest" placeholder="搜索客人姓名">
+                        <button class="btn btn-outline-secondary" id="search-guest-btn">搜索</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>姓名</th>
+                            <th>性别</th>
+                            <th>籍贯</th>
+                            <th>工作单位</th>
+                            <th>职业</th>
+                            <th>入住日期</th>
+                            <th>预计离店</th>
+                            <th>房间号</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody id="guest-table-body">
+                        <!-- 客人数据将通过JS动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 房间管理 -->
+            <div id="room-management" class="content-section d-none">
+                <h2>房间管理</h2>
+                <div class="mb-3">
+                    <button class="btn btn-primary" id="add-room-btn">新增房间</button>
+                    <button class="btn btn-info" id="refresh-rooms-btn">刷新列表</button>
+                    <button class="btn btn-success" id="show-available-rooms-btn">查看可用房间</button>
+                    <button class="btn btn-secondary" id="show-all-rooms-btn">查看所有房间</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>房间号</th>
+                            <th>房型</th>
+                            <th>价格</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody id="room-table-body">
+                        <!-- 房间数据将通过JS动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 办理入住 -->
+            <div id="check-in" class="content-section d-none">
+                <h2>办理入住</h2>
+
+                <!-- 添加刷新按钮 -->
+                <div class="mb-3">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="refresh-available-rooms">
+                        <i class="bi bi-arrow-clockwise"></i> 刷新房间列表
+                    </button>
+                </div>
+
+                <form id="check-in-form">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">姓名 *</label>
+                                <input type="text" class="form-control" id="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="gender" class="form-label">性别 *</label>
+                                <select class="form-control" id="gender" required>
+                                    <option value="">请选择</option>
+                                    <option value="男">男</option>
+                                    <option value="女">女</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="origin" class="form-label">籍贯</label>
+                                <input type="text" class="form-control" id="origin">
+                            </div>
+                            <div class="mb-3">
+                                <label for="workUnit" class="form-label">工作单位</label>
+                                <input type="text" class="form-control" id="workUnit">
+                            </div>
+                            <div class="mb-3">
+                                <label for="profession" class="form-label">职业</label>
+                                <input type="text" class="form-control" id="profession">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="reasonForStay" class="form-label">住店事由</label>
+                                <textarea class="form-control" id="reasonForStay" rows="2"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="checkInDate" class="form-label">入住日期 *</label>
+                                <input type="date" class="form-control" id="checkInDate" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="expectedCheckOutDate" class="form-label">预计离店日期 *</label>
+                                <input type="date" class="form-control" id="expectedCheckOutDate" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="roomNumber" class="form-label">房间号 *</label>
+                                <select class="form-control" id="roomNumber" required>
+                                    <option value="">加载中...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">提交入住信息</button>
+                </form>
+            </div>
+            <!-- 账务管理 -->
+            <div id="account-management" class="content-section d-none">
+                <h2>账务管理</h2>
+
+                <!-- 选项卡 -->
+                <ul class="nav nav-tabs" id="accountTabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#consumption-tab">消费入账</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#advance-payment-tab">预付款管理</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#account-query-tab">账务查询</a>
+                    </li>
+                </ul>
+
+                <div class="tab-content mt-3">
+                    <!-- 消费入账标签页 -->
+                    <div class="tab-pane fade show active" id="consumption-tab">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">新增消费记录</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="consumption-form">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="consumption-guest" class="form-label">选择客人 *</label>
+                                                <select class="form-control" id="consumption-guest" required>
+                                                    <option value="">请选择客人</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="account-type" class="form-label">账务类型 *</label>
+                                                <select class="form-control" id="account-type" required>
+                                                    <option value="">请选择类型</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="consumption-item" class="form-label">消费项目 *</label>
+                                                <select class="form-control" id="consumption-item" required>
+                                                    <option value="">请选择项目</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="unit-price" class="form-label">单价</label>
+                                                <input type="number" class="form-control" id="unit-price" step="0.01" readonly>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="quantity" class="form-label">数量</label>
+                                                <input type="number" class="form-control" id="quantity" value="1" min="1">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="total-amount" class="form-label">总金额</label>
+                                                <input type="number" class="form-control" id="total-amount" step="0.01" readonly>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="consumption-date" class="form-label">消费日期</label>
+                                                <input type="date" class="form-control" id="consumption-date">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">添加消费记录</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h5 class="card-title">未结账消费记录</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>客人姓名</th>
+                                            <th>房间号</th>
+                                            <th>消费类型</th>
+                                            <th>消费项目</th>
+                                            <th>数量</th>
+                                            <th>单价</th>
+                                            <th>总金额</th>
+                                            <th>消费日期</th>
+                                            <th>操作</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="unsettled-accounts-table">
+                                        <!-- 未结账消费记录将通过JS动态加载 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 预付款管理标签页 -->
+                    <div class="tab-pane fade" id="advance-payment-tab">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">预付款记录</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="advance-payment-form">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="advance-guest" class="form-label">选择客人 *</label>
+                                                <select class="form-control" id="advance-guest" required>
+                                                    <option value="">请选择客人</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="payment-amount" class="form-label">付款金额 *</label>
+                                                <input type="number" class="form-control" id="payment-amount" step="0.01" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="payment-method" class="form-label">付款方式</label>
+                                                <select class="form-control" id="payment-method">
+                                                    <option value="现金">现金</option>
+                                                    <option value="刷卡">刷卡</option>
+                                                    <option value="转账">转账</option>
+                                                    <option value="微信支付">微信支付</option>
+                                                    <option value="支付宝">支付宝</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="payment-date" class="form-label">付款日期</label>
+                                                <input type="date" class="form-control" id="payment-date">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="payment-remark" class="form-label">备注</label>
+                                                <input type="text" class="form-control" id="payment-remark">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">记录预付款</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h5 class="card-title">预付款记录列表</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>客人姓名</th>
+                                            <th>房间号</th>
+                                            <th>付款金额</th>
+                                            <th>付款方式</th>
+                                            <th>付款日期</th>
+                                            <th>备注</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="advance-payments-table">
+                                        <!-- 预付款记录将通过JS动态加载 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 账务查询标签页 -->
+                    <div class="tab-pane fade" id="account-query-tab">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title">客人账务查询</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="query-guest" class="form-label">选择客人</label>
+                                        <select class="form-control" id="query-guest">
+                                            <option value="">请选择客人</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">当前欠款</label>
+                                        <div class="form-control" id="unsettled-amount-display">¥ 0.00</div>
+                                    </div>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>消费类型</th>
+                                            <th>消费项目</th>
+                                            <th>数量</th>
+                                            <th>单价</th>
+                                            <th>总金额</th>
+                                            <th>消费日期</th>
+                                            <th>是否结账</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="guest-accounts-table">
+                                        <!-- 客人账务记录将通过JS动态加载 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 结账管理 -->
+            <div id="checkout-management" class="content-section d-none">
+                <h2>结账管理</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">客人结账</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="checkout-form">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="checkout-guest" class="form-label">选择客人 *</label>
+                                        <select class="form-control" id="checkout-guest" required>
+                                            <option value="">请选择客人</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="total-consumption" class="form-label">总消费金额</label>
+                                        <input type="number" class="form-control" id="total-consumption" step="0.01" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="total-advance" class="form-label">总预付款</label>
+                                        <input type="number" class="form-control" id="total-advance" step="0.01" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="net-amount" class="form-label">应付金额</label>
+                                        <input type="number" class="form-control" id="net-amount" step="0.01" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="checkout-payment-method" class="form-label">付款方式 *</label>
+                                        <select class="form-control" id="checkout-payment-method" required>
+                                            <option value="现金">现金</option>
+                                            <option value="刷卡">刷卡</option>
+                                            <option value="转账">转账</option>
+                                            <option value="微信支付">微信支付</option>
+                                            <option value="支付宝">支付宝</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="actual-payment" class="form-label">实付金额 *</label>
+                                        <input type="number" class="form-control" id="actual-payment" step="0.01" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="change-amount" class="form-label">找零金额</label>
+                                        <input type="number" class="form-control" id="change-amount" step="0.01" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="checkout-remark" class="form-label">备注</label>
+                                        <input type="text" class="form-control" id="checkout-remark">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success">确认结账</button>
+                            <button type="button" class="btn btn-info" id="print-receipt-btn" style="display: none;">打印收据</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title">结账记录</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>客人姓名</th>
+                                    <th>房间号</th>
+                                    <th>总金额</th>
+                                    <th>预付款</th>
+                                    <th>实付金额</th>
+                                    <th>找零</th>
+                                    <th>付款方式</th>
+                                    <th>结账日期</th>
+                                    <th>收据号</th>
+                                </tr>
+                                </thead>
+                                <tbody id="checkout-records-table">
+                                <!-- 结账记录将通过JS动态加载 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 收据打印模态框 -->
+            <div class="modal fade" id="receiptModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">结账收据</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" id="receipt-content">
+                            <!-- 收据内容将通过JS动态生成 -->
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                            <button type="button" class="btn btn-primary" onclick="printReceipt()">打印收据</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 客人编辑模态框 -->
+<div class="modal fade" id="guestModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="guestModalTitle">编辑客人信息</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="guest-form">
+                    <input type="hidden" id="guest-id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal-name" class="form-label">姓名 *</label>
+                                <input type="text" class="form-control" id="modal-name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="modal-gender" class="form-label">性别 *</label>
+                                <select class="form-control" id="modal-gender" required>
+                                    <option value="">请选择</option>
+                                    <option value="男">男</option>
+                                    <option value="女">女</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="modal-origin" class="form-label">籍贯</label>
+                                <input type="text" class="form-control" id="modal-origin">
+                            </div>
+                            <div class="mb-3">
+                                <label for="modal-workUnit" class="form-label">工作单位</label>
+                                <input type="text" class="form-control" id="modal-workUnit">
+                            </div>
+                            <div class="mb-3">
+                                <label for="modal-profession" class="form-label">职业</label>
+                                <input type="text" class="form-control" id="modal-profession">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal-reasonForStay" class="form-label">住店事由</label>
+                                <textarea class="form-control" id="modal-reasonForStay" rows="2"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="modal-checkInDate" class="form-label">入住日期 *</label>
+                                <input type="date" class="form-control" id="modal-checkInDate" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="modal-expectedCheckOutDate" class="form-label">预计离店日期 *</label>
+                                <input type="date" class="form-control" id="modal-expectedCheckOutDate" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="modal-roomNumber" class="form-label">房间号 *</label>
+                                <select class="form-control" id="modal-roomNumber" required>
+                                    <option value="">请选择房间</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="modal-roomChangeHistory" class="form-label">换房记录</label>
+                                <textarea class="form-control" id="modal-roomChangeHistory" rows="2" readonly></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="save-guest-btn">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 房间编辑模态框 -->
+<div class="modal fade" id="roomModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="roomModalTitle">编辑房间信息</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="room-form">
+                    <input type="hidden" id="room-id">
+                    <div class="mb-3">
+                        <label for="modal-room-number" class="form-label">房间号 *</label>
+                        <input type="text" class="form-control" id="modal-room-number" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal-room-type" class="form-label">房型</label>
+                        <input type="text" class="form-control" id="modal-room-type">
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal-room-price" class="form-label">价格</label>
+                        <input type="number" class="form-control" id="modal-room-price" step="0.01">
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal-room-status" class="form-label">状态</label>
+                        <select class="form-control" id="modal-room-status">
+                            <option value="AVAILABLE">可用</option>
+                            <option value="OCCUPIED">已占用</option>
+                            <option value="MAINTENANCE">维护中</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="save-room-btn">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
